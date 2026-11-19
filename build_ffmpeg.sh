@@ -5,7 +5,8 @@
 # =============================================================================
 # 设计原则:
 #   1. 仅启用 LGPL 组件，避免 GPL 传染（如需 GPL 请取消注释 GPL 相关行）
-#   2. 使用现代 NDK (r23+) 推荐的 --cross-prefix 方式，不再手动指定 CC/CXX/AR
+#   2. 显式指定带 API 后缀的 clang wrapper + llvm 工具链 (NDK r19+ 推荐)
+#      注意: 裸 bin/clang 没有 target triple，FFmpeg configure 自检必挂
 #   3. 16KB page size 对齐 (-Wl,-z,max-page-size=16384)，满足 Android 15 / Google Play 要求
 #   4. 动态库 (--enable-shared --disable-static)，便于最终用户替换库文件 (LGPL 要求)
 #   5. 精简组件 (--enable-small --disable-doc --disable-ffmpeg/ffplay/ffprobe)
@@ -62,7 +63,12 @@ ARCHS=(
 COMMON_CONFIGURE_FLAGS=(
     --target-os=android
     --enable-cross-compile
-    --cross-prefix="${TOOLCHAIN}/bin/"
+    # 关键: FFmpeg 7.x 交叉编译时 host_cc 默认取系统 gcc，不用 NDK clang。
+    # 系统 gcc 太老会报 "Host compiler lacks C11 support"。
+    # 显式用 NDK 自带的裸 clang(它是 host target、支持 C11)，免装系统包。
+    --host-cc="${TOOLCHAIN}/bin/clang"
+    # 系统没装 nasm；它只影响 x86/x86_64 的汇编优化，arm 架构走 gas 不受影响
+    --disable-x86asm
     --sysroot="${TOOLCHAIN}/sysroot"
     --enable-shared
     --disable-static
@@ -161,15 +167,36 @@ build_arch() {
 
     cd "${FFMPEG_SRC_DIR}"
 
+    # NDK r27 里 bin/clang 是裸编译器(host target)，必须用带 API 后缀的 wrapper
+    local CC="${TOOLCHAIN}/bin/${TOOLCHAIN_PREFIX}${API_LEVEL}-clang"
+    local CXX="${TOOLCHAIN}/bin/${TOOLCHAIN_PREFIX}${API_LEVEL}-clang++"
+    [[ -x "${CC}" ]] || { log_error "编译器不存在: ${CC}"; return 1; }
+    log_info "CC=${CC}"
+
     # 组装 configure 参数
     local configure_flags=("${COMMON_CONFIGURE_FLAGS[@]}")
     configure_flags+=(
         --prefix="${ARCH_OUTPUT_DIR}"
         --arch="${ARCH_CONFIG}"
         --cpu="${CPU}"
+        --cc="${CC}"
+        --cxx="${CXX}"
+        --ar="${TOOLCHAIN}/bin/llvm-ar"
+        --nm="${TOOLCHAIN}/bin/llvm-nm"
+        --strip="${TOOLCHAIN}/bin/llvm-strip"
+        # 不要再 -D__ANDROID_API__：带 API 后缀的 clang wrapper 已自动定义，
+        # 手动加会导致满屏 macro redefined 警告
         --extra-cflags="${EXTRA_CFLAGS}"
         --extra-ldflags="-Wl,-z,max-page-size=16384"
     )
+
+    # 没有 nasm 时 x86 汇编回退给 gas，产出的 .o 非 PIC，
+    # 链接 .so 报 R_386_32 relocation 错误。x86/x86_64 仅供模拟器，
+    # 走纯 C 即可，按架构彻底禁汇编（不影响 arm64/armv7）。
+    if [[ "${ARCH_DIR}" == "x86" || "${ARCH_DIR}" == "x86_64" ]]; then
+        log_warn "${ARCH_DIR} 禁用全部汇编 (--disable-asm)，规避非 PIC 链接错误"
+        configure_flags+=(--disable-asm)
+    fi
 
     # 条件启用 GPL / Nonfree
     if [[ "${ENABLE_GPL}" == "true" ]]; then
