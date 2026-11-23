@@ -20,8 +20,8 @@ set -euo pipefail
 # 用户可配置变量 (修改此处即可，无需改动下方逻辑)
 # -----------------------------------------------------------------------------
 # NDK 路径 - 请修改为你的实际 NDK 路径
-# 推荐: Android SDK 目录下的 ndk/27.x 或手动下载的 android-ndk-r27d
-NDK_PATH="${NDK_PATH:-$(pwd)/android-ndk-r27d}"
+# 推荐: Android SDK 目录下的 ndk/28.x 或手动下载的 android-ndk-r28c
+NDK_PATH="${NDK_PATH:-$(pwd)/android-ndk-r28c}"
 
 # 最低 Android API 级别 (对应 minSdkVersion)
 # API 24 = Android 7.0 (Nougat)，现代应用推荐 24+
@@ -167,7 +167,7 @@ build_arch() {
 
     cd "${FFMPEG_SRC_DIR}"
 
-    # NDK r27 里 bin/clang 是裸编译器(host target)，必须用带 API 后缀的 wrapper
+    # NDK r28 里 bin/clang 仍是裸编译器(host target)，必须用带 API 后缀的 wrapper
     local CC="${TOOLCHAIN}/bin/${TOOLCHAIN_PREFIX}${API_LEVEL}-clang"
     local CXX="${TOOLCHAIN}/bin/${TOOLCHAIN_PREFIX}${API_LEVEL}-clang++"
     [[ -x "${CC}" ]] || { log_error "编译器不存在: ${CC}"; return 1; }

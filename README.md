@@ -15,7 +15,7 @@ Android 平台 FFmpeg 动态库编译脚本。
 
 ```
 Ubuntu 24.04.2
-NDK: android-ndk-r27d (27.3.13750724)
+NDK: android-ndk-r28c (28.2.13676358)
 FFmpeg: 7.1.5 LTS
 Android API: 24 (Android 7.0 Nougat)
 ```
@@ -26,13 +26,13 @@ Android API: 24 (Android 7.0 Nougat)
 
 较旧版本：https://github.com/android/ndk/wiki/Unsupported-Downloads
 
-r27d 版本 ndkVersion `"27.3.13750724"`
+r28c 版本 ndkVersion `"28.2.13676358"`
 
 ```bash
 mkdir AndroidDev
 cd AndroidDev
-wget https://dl.google.com/android/repository/android-ndk-r27d-linux.zip
-unzip android-ndk-r27d-linux.zip
+wget https://dl.google.com/android/repository/android-ndk-r28c-linux.zip
+unzip android-ndk-r28c-linux.zip
 ```
 
 ### FFmpeg 下载
@@ -50,7 +50,7 @@ tar -xf ffmpeg-7.1.5.tar.xz
 
 官方编译说明：https://trac.ffmpeg.org/wiki/CompilationGuide/Android
 
-修改 `build_ffmpeg.sh` 顶部的 `NDK_PATH` 变量为你的实际 NDK 路径，然后执行：
+修改 `build_ffmpeg.sh` 顶部的 `NDK_PATH` 变量为你的实际 NDK 路径（并确认已装好 `make` 等工具），然后执行：
 
 ```shell
 chmod +x build_ffmpeg.sh
@@ -65,7 +65,7 @@ chmod +x build_ffmpeg.sh
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `NDK_PATH` | `$(pwd)/android-ndk-r27d` | NDK 安装路径 |
+| `NDK_PATH` | `$(pwd)/android-ndk-r28c` | NDK 安装路径 |
 | `API_LEVEL` | `24` | 最小 Android API 级别 |
 | `JOBS` | `$(nproc)` | 编译并行线程数 |
 | `ENABLE_GPL` | `false` | 是否启用 GPL 组件（x264/x265） |
